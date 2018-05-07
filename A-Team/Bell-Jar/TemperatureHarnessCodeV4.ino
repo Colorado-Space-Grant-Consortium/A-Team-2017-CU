@@ -1,20 +1,22 @@
 //Updated for SD Card and RTC 01/04/2017
 //Updated for Time and Date stamp 01/24/2017
+//Updated to clean up code 04/18/2018
 
+// Include Libraries for Temperature sensor
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-//Include Libraries for Clock
+// Include Libraries for Clock
 #include <SPI.h>
 #include <SparkFunDS3234RTC.h>
 
-// Data wire is plugged into port 4 on the Arduino
+// Temperature Data wire is plugged into port 4 on the Arduino
 #define ONE_WIRE_BUS 4
 #define TEMPERATURE_PRECISION 9
 
 // Define Clock style and Pin
 #define PRINT_USA_DATE
-#define DS13074_CS_PIN A1 
+#define DS13074_CS_PIN A2 
 
 // include SD library
 #include <SD.h>
@@ -46,17 +48,16 @@ SdFile root;
 File fileType;
 String fileName = "BJarLog1.csv";
 
-//const int chipSelect = 8;
-   
+//const int chipSelect = 8
+
+////////////////////////////////////////////////////////////////////////////////////////////
 void setup(void)
 {
   // start serial port
   Serial.begin(9600);
-  pinMode(10,OUTPUT);
+  pinMode(10,OUTPUT);   //Necessary for SD shield to work
  
-  //Necissary for SD shield to work
-  //pinMode(10, OUTPUT);
-  
+  //initialize LCD
   lcd.begin(20, 4);
   
    // set up display
@@ -90,18 +91,18 @@ void setup(void)
   if (sensors.isParasitePowerMode()) Serial.println("ON");
   else Serial.println("OFF");
 
-  // assign address manually.  the addresses below will beed to be changed
-  // to valid device addresses on your bus.  device address can be retrieved
+  // Assign address manually. The addresses below will beed to be changed
+  // to valid device addresses on your bus.  Device address can be retrieved
   // by using either oneWire.search(deviceAddress) or individually via
   // sensors.getAddress(deviceAddress, index)
   //insideThermometer = { 0x28, 0x1D, 0x39, 0x31, 0x2, 0x0, 0x0, 0xF0 };
   //outsideThermometer   = { 0x28, 0x3F, 0x1C, 0x31, 0x2, 0x0, 0x0, 0x2 };
 
-  // search for devices on the bus and assign based on an index.  ideally,
+  // Search for devices on the bus and assign based on an index. Ideally,
   // you would do this to initially discover addresses on the bus and then 
   // use those addresses and manually assign them (see above) once you know 
   // the devices on your bus (and assuming they don't change).
-  // 
+  
   // method 1: by index
   if (!sensors.getAddress(Temp0, 0)) Serial.println("Unable to find address for Device 0"); 
   if (!sensors.getAddress(Temp1, 1)) Serial.println("Unable to find address for Device 1"); 
@@ -117,7 +118,7 @@ void setup(void)
   // or you have already retrieved all of them.  It might be a good idea to 
   // check the CRC to make sure you didn't get garbage.  The order is 
   // deterministic. You will always get the same devices in the same order
-  //
+  
   // Must be called before search()
   //oneWire.reset_search();
   // assigns the first address found to insideThermometer
@@ -175,7 +176,7 @@ void setup(void)
   Serial.print(sensors.getResolution(Temp2), DEC); 
   Serial.println();
   
-  Serial.print("Device 3 Resolution: ");
+  Serial.print("Device 3 Resolution: ");\
   Serial.print(sensors.getResolution(Temp3), DEC); 
   Serial.println();
   
@@ -202,19 +203,23 @@ void setup(void)
   fileType.close();
   //Turn off SPI to SD
   digitalWrite(8,HIGH);
+
+ ///////////////////////////////////////////////////////////////////////////////////// 
   //Begin RTC Set-up
   // Call rtc.begin([cs]) to initialize the library
   // The chip-select pin should be sent as the only parameter
   rtc.begin(DS13074_CS_PIN);
   // set the RTC's clock and date to the compiliers 
-  // predefined time.
-  rtc.autoTime();
+  // predefined time. ONLY RUN rtc.autoTime() THE FIRST TIME YOU CONFIGURE. 
+  // Afterwards, comment out and re-upload code.
+  
+  //rtc.autoTime();
+  
   // Update time/date values
-  rtc.update();
-/////////////////////////////////////////////////////////////////////////////////////
-//initialize starting time for RTC
-  rtc.autoTime();
-  rtc.update();
+    rtc.update();
+
+//initialize starting time for RTC Manually 
+/*
   int m,mi,h,d,da,y;
   m = rtc.month();
   da = rtc.date();
@@ -222,11 +227,12 @@ void setup(void)
   d = rtc.day();
   y = rtc.year();
   rtc.setTime(0,0,h,d,da,m,y);
+*/
   //////////////////////////////////////////////////////////////////////
-  
+ 
 }
 
-// function to print a device address
+// Function to print a device address
 void printAddress(DeviceAddress deviceAddress)
 {
   for (uint8_t i = 0; i < 8; i++)
@@ -237,8 +243,8 @@ void printAddress(DeviceAddress deviceAddress)
   }
 }
 
-
-// function to print the temperature for a device
+//////////////////////////////////////////////////////////////////////////////////////////
+// Function to print the temperature for a device
 void printTemperature(DeviceAddress deviceAddress)
 {
   
@@ -249,7 +255,8 @@ void printTemperature(DeviceAddress deviceAddress)
   //Serial.print(DallasTemperature::toFahrenheit(tempC));
   
 }
-
+//////////////////////////////////////////////////////////////////////////////////////
+// Function to print device adresses on LCD
 void printTemperatureLCD(DeviceAddress deviceAddress, int col, int row)
 {
   
@@ -258,15 +265,7 @@ void printTemperatureLCD(DeviceAddress deviceAddress, int col, int row)
   lcd.print(tempC);
 }
 
-/*
-// function to print a device's resolution
-void printResolution(DeviceAddress deviceAddress)
-{
-  Serial.print("Resolution: ");
-  Serial.print(sensors.getResolution(deviceAddress));
-  Serial.println();    
-}
-*/
+/////////////////////////////////////////////////////////////////////////////////////
 //Function to pull time from RTC 
 void printTime()
 {
@@ -311,6 +310,9 @@ void printData(DeviceAddress deviceAddress)
   printTemperature(deviceAddress);
   Serial.println();
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//Function to save data to SD card
 void SDSave(String Date, String Time, float timer, float PSI){
   //Collect Temperature data
   float TEMP0, TEMP1, TEMP2, TEMP3, TEMP4, TEMP5, TEMP6;
@@ -321,10 +323,10 @@ void SDSave(String Date, String Time, float timer, float PSI){
   TEMP4 = sensors.getTempC(Temp4);
   TEMP5 = sensors.getTempC(Temp5);
   TEMP6 = sensors.getTempC(Temp6);
-
+/
   
   //Open SPI bus to SD Card
-  digitalWrite(A1,HIGH);
+  digitalWrite(A2,HIGH);
   //Close SPI bus to RTC
   digitalWrite(8,LOW);
   //Open File and save data
@@ -354,41 +356,48 @@ void SDSave(String Date, String Time, float timer, float PSI){
   //Close SD file and save
   fileType.close();
   //Close SPI to SD
-  digitalWrite(A1,LOW);
+  digitalWrite(A2,LOW);
   //open SPI to RTC
   digitalWrite(8,HIGH);
   
 
 }
+
+////////////////////////////////////////////////////////////////////////////////////
 void loop(void)
 { 
-  //Time set-up
+  // Close SPI to SD card 
+   //digitalWrite(8, HIGH);
+  // Open SPI to RTC
   digitalWrite(DS13074_CS_PIN,LOW);
+
   static int8_t lastSecond = -1;
+  
   // Call rtc.update() to update all rtc.seconds(), rtc.minutes(),
   // etc. return functions.
-  rtc.update();
-//  if (rtc.second() != lastSecond) // If the second has changed
-//  {
-//    printTime(); // Print the new time
-//    
-//    lastSecond = rtc.second(); // Update lastSecond value
-//  }
-//  float timer = (60*rtc.minute())+rtc.second(); //Counts seconds
+ rtc.update();
+if (rtc.second() != lastSecond) // If the second has changed
+  {
+   //printTime(); // Print the new time. Not necessary, can uncomment when debugging
+   lastSecond = rtc.second(); // Update lastSecond value
+ }
+
+ float timer = (60*rtc.minute())+rtc.second(); //Counts seconds
   int s,m,mi,h,d,da,y;
   s = rtc.second();
   mi = rtc.minute();
+  h = rtc.hour();
   m = rtc.month();
   da = rtc.date();
-  h = rtc.hour();
   d = rtc.day();
   y = rtc.year();
  
   String Date = String(m) + "/" + String(da) + "/" + String(y);
   String Time = String(h) + ":" + String(mi) + ":" + String(s);
-  
+
+  // Close SPI to RTC
   digitalWrite(DS13074_CS_PIN,HIGH);
-  float timer = millis();
+
   // get pressure
   pressure = analogRead(A4);
   pressureV = pressure*(5.0/1023);
